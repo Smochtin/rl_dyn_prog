@@ -23,7 +23,7 @@ class rl_dyn_prog:
         self.grid = gw.grid(self.size)
         
         # Initialize arbitrary value function
-        self.v_s = self.v_fct_0()
+        self.V_s = self.v_fct_0()
         
         # Current policy
         self.policy = None
@@ -52,35 +52,40 @@ class rl_dyn_prog:
                      actions = ['r','l','u','d']
                      V_s = 0
                      for a in actions:
+                         # policy for current state
                          pi_as = self.policy[m][n][a]
+                         # Possible successor states
+                         s_prime = [[m+1,n],
+                                    [m-1,n],
+                                    [m,n+1],
+                                    [m,n-1]]
+                         # Second sum with p_s_a in the bellman equation
+                         v_s_p = 0 
                          for s_ in s_prime
                              # Get transition probability
-                             p = self.p_s_a(s,a)        
+                             m_,n_ = s_
+                             p = self.p_s_a(s_,s,a)
+                             v_s_prime = self.V_s[m_][n_]
+                             v_s_p = v_s_p + p * (self.r + self.gamma * v_s_prime)
         
     def v_fct_0(self):
         v = [[0 for n in range(self.size[1]) for m in range(self.size[0])]]
         return v
     
-    def p_s_a(self,s,a):
+    def p_s_a(self,s_prime,s,a):
+        """ Transition probability for s to s_prime"""
+        "In this scenario the current action 'a' does not matter for p_s_a,"
+        "Because all reachable states s' are specified in a list." 
+        "Therefore this whole function is more obsolete but should remind,"
+        "on the bellman equation."
+        
         x,y = s
-        if x in range(0,self.size[0]) and y in range(0,self.size[1]):
-            s_prime_dic = {'r': [x+1, y],
-                           'l': [x-1, y],
-                           'u': [x, y +1],
-                           'd': [x, y -1]
-                           }
-            s_prime = s_prime_dic[a]
-            if s_prime[0] in range(0,self.size[0]) and \
-               s_prime[1] in range(0,self.size[1]) and \
-               abs(s_prime[0] - x) <= 1.0 and \
-               abs(s_prime[1] - y) <= 1.0:
-                return 1
-            else:
-                return 0
-             
+        x_p, y_p = s_prime
+        if (abs(x-x_p) <= 1.0 and abs(y-y_p) <= 1.0):
+            return 1
         else:
-            raise Exception("From p_s_a(...): current state isn't on the grid")
-    
+            return 0
+        
 if __name__ == '__main__':   
   
     
