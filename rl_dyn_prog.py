@@ -58,7 +58,7 @@ class rl_dyn_prog:
             raise Exception('From evaluate_policy(...): policy is None')
 
         # Iitialize delta
-        D = 0
+       
         k = 0
         ts_m, ts_n = self.terminal_state[0]
         ts_m2, ts_n2 = self.terminal_state[1]
@@ -66,6 +66,7 @@ class rl_dyn_prog:
         while 1:
             # iterate through all states
            # self.print_V(self.V_s)
+            D = 0
             for m in range(0, self.size[0]):
                 for n in range(0, self.size[1]):
                     # Check for terminal state
@@ -83,16 +84,21 @@ class rl_dyn_prog:
                     
                     self.V_s[m][n] = self.calculate_value(s)
                     # Calculate termination critarion
+                    #print(self.V_s[m][n], v, abs(v - self.V_s[m][n]))
                     D = max(D, abs(v - self.V_s[m][n]))
             k = k + 1
-            if D < theta:
+            if abs(D) < theta:
                 print("D: ", D)
                 break
             
-            if k > 1000:
-                break
+#            if not k%100:
+#                self.print_V(self.V_s)    
             
-        print("Evaluated policy and took ", k, "Iterations")
+            if k > 1000:
+                print("D: ", D)
+                break
+        
+        print("Evaluated policy, took ", k, "Iterations")
 
     def print_V(self, v):
         print("--")
@@ -152,7 +158,6 @@ class rl_dyn_prog:
             
             for s_ in s_prime:
                 p = self.p_s_a(s_, s, a)
-                tmp_lst2.append((s_,s,a))
                 
                 if (s_[0] not in range(0, self.size[0])) or \
                    (s_[1] not in range(0, self.size[1])):
@@ -161,10 +166,6 @@ class rl_dyn_prog:
                 v_s_p = v_s_p +  p * \
                         (self.reward + self.gamma *
                          self.V_s[s_[0]][s_[1]])
-                
-                tmp_lst.append(self.p_s_a(s_, s, a) * \
-                        (self.reward + self.gamma *
-                         self.V_s[s_[0]][s_[1]]))
                 
             V_s_tmp = V_s_tmp + pi_as * v_s_p
 
@@ -188,19 +189,23 @@ if __name__ == '__main__':
     rl.set_policy(policy)
     rl.set_gamma(1)
     
-  #  rl.evaluat_policy(0.1)
-  #  print("1st")
-  #  rl.print_V(rl.V_s)
-    rl.evaluat_policy(0.001)
-    print("2nd")
+    print("1st")
+    rl.evaluat_policy(1)
     rl.print_V(rl.V_s)
-    rl.v_fct_0()
-    rl.evaluat_policy(0.0001)
-    print("3rd")
-    rl.print_V(rl.V_s)
-    rl.v_fct_0()
-    print("4th")
-    rl.v_fct_0()
-    rl.evaluat_policy(0.0001)
-    rl.print_V(rl.V_s)
+    rl.reset_v_s()
     
+    print("2nd")
+    rl.evaluat_policy(0.1)
+    rl.print_V(rl.V_s)
+    rl.reset_v_s()
+    
+    print("3rd")
+    rl.evaluat_policy(0.0001)
+    rl.print_V(rl.V_s)
+    rl.reset_v_s()
+    
+
+    print("4th")    
+    rl.evaluat_policy(0.0001)
+    rl.print_V(rl.V_s)
+#    
