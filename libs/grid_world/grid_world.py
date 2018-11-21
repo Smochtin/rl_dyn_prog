@@ -17,8 +17,9 @@ class grid:
     def draw_grid_result(self,policy, value_fct=None, q_fct=None):
         """ Gets policy and visualizes it"""
         " policy,value_fct and q_fct are 2-dim lists. An entry of the policy"
-        "consists of a discrete probability distribution"
+        "consists of an action set"
         "value_fct and q_fct are just matrices."
+        plt.close()
         if len(policy[0]) == self.size[1] and len(policy) == self.size[1]:
             #Step through all fields
             self.build_grid()
@@ -27,8 +28,8 @@ class grid:
                 # step through all policy columns
                 for n in range(len(policy[0])):
                     # draw direction from policy
-                    x,y, direction = m,n,policy[m][n]
-                    for d in direction:
+                    y,x, distribution = len(policy) - 1 - m,n,policy[m][n]
+                    for d in distribution:
                         self.draw_dir([x,y],d)
 
             if not (value_fct is None):
@@ -37,7 +38,7 @@ class grid:
                     # step through all policy columns
                     for n in range(len(value_fct[0])):
                         # draw direction from policy
-                        x,y, v = m,n,value_fct[m][n]
+                        y,x, v = len(policy) - 1 - m,n,value_fct[m][n]
                         self.draw_txt([x,y],v,'v')
 
             if not (q_fct is None):
@@ -46,7 +47,7 @@ class grid:
                     # step through all policy columns
                     for n in range(len(q_fct[0])):
                         # draw direction from policy
-                        x,y, q = m,n,q_fct[m][n]
+                        y,x, q = len(policy) - 1 - m,n,q_fct[m][n]
                         self.draw_txt([x,y],q,'q')
             plt.axis('equal')
             s = 'v values in upper left corner, q values in lower left corner'
@@ -150,6 +151,6 @@ if __name__ == '__main__':
         idx += 10
 
     q = V[:]
-    pi = [ [['r','u'] for n in range(8)] for m in range(8)]
+    pi = [ [['l','r','u','d'] for n in range(8)] for m in range(8)]
 
     a.draw_grid_result(pi,value_fct=V,q_fct=q)

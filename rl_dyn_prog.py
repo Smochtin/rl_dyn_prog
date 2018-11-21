@@ -49,6 +49,18 @@ class rl_dyn_prog:
            and action pair"""
         # Get current action probability values
         return self.policy[s[0]][s[1]]
+    
+    def policy_iteration(self,theta):
+        policy_stable = False
+        
+        while not policy_stable:
+            self.evaluat_policy(theta)
+            self.grid.draw_grid_result(self.policy, self.V_s)
+            policy_stable = self.policy_improvement()
+            
+            
+        self.grid.draw_grid_result(self.policy, self.V_s)
+        print(self.policy)
 
     def evaluat_policy(self, theta):
         """ Evaluate the current policy """
@@ -58,14 +70,13 @@ class rl_dyn_prog:
             raise Exception('From evaluate_policy(...): policy is None')
 
         # Iitialize delta
-       
         k = 0
         ts_m, ts_n = self.terminal_state[0]
         ts_m2, ts_n2 = self.terminal_state[1]
         # Iterate as long as delta is greater than theta
         while 1:
             # iterate through all states
-           # self.print_V(self.V_s)
+            # self.print_V(self.V_s)
             D = 0
             for m in range(0, self.size[0]):
                 for n in range(0, self.size[1]):
@@ -82,7 +93,7 @@ class rl_dyn_prog:
 
                     # Calculate new value for state m,n
                     
-                    self.V_s[m][n] = self.calculate_value(s)
+                    self.V_s[m][n] = round(self.calculate_value(s),2)
                     # Calculate termination critarion
                     #print(self.V_s[m][n], v, abs(v - self.V_s[m][n]))
                     D = max(D, abs(v - self.V_s[m][n]))
@@ -90,16 +101,79 @@ class rl_dyn_prog:
             if abs(D) < theta:
                 print("D: ", D)
                 break
-            
-#            if not k%100:
-#                self.print_V(self.V_s)    
-            
+
             if k > 1000:
                 print("D: ", D)
                 break
-        
         print("Evaluated policy, took ", k, "Iterations")
 
+    def policy_improvement(self):
+        """ Improve policy """
+        
+        policy_stable = True
+
+        # For each state
+        for m in range(0, self.size[0]):
+            for n in range(0, self.size[1]):
+                old_action = self.policy[m][n]
+                s = [m, n]
+                self.policy[m][n] = self.best_action(s)
+                if old_action != self.policy[m][n]:
+                    policy_stable = False
+        print("Improved policy")
+        if policy_stable:
+            print("Policy is stable")
+            return True
+        else:
+            print("Policy is unstable")
+            return False
+        
+    def best_action(self,s):
+        m,n = s
+        ts_m, ts_n = self.terminal_state[0]
+        ts_m2, ts_n2 = self.terminal_state[1]
+        actionDict = { (0, -1) : 'l',
+                       (0, 1) : 'r' ,
+                       (-1, 0) : 'u',
+                       (1, 0) : 'd'  
+                      }
+        # Run through all possible successor states:
+        m, n = s
+        s_prime = [[m+1, n],
+                   [m-1, n],
+                   [m, n+1],
+                   [m, n-1]]
+        action_list = []
+        for s_ in s_prime:
+            if (s_[0] in range(0, self.size[0])) and \
+               (s_[1] in range(0, self.size[1])) and \
+               not ((ts_m == m and ts_n == n) or \
+                    (ts_m2-1 == m and ts_n2-1 == n)):
+                    action_list.append([self.V_s[s_[0]][s_[1]], s_])
+        
+        if action_list is None:
+            print("From best_action(..), action_list is None")
+            
+        # Sort action_list
+        if len(action_list) > 1:
+            action_list.sort(key=lambda elem: elem[0], reverse=True)
+            for idx, a in enumerate(action_list[1:]):
+                if a[0] < action_list[idx][0]:
+                    action_list = action_list[0:idx+1]
+                    break
+        
+        actions = dict()
+        if len(action_list) > 0:
+            value = 1 / len(action_list)
+            for al in action_list:
+                s_ = al[1]
+                m_p, n_p = s_
+                tmp_dic = {actionDict[(m_p - m, n_p - n)] : value}
+                actions.update(tmp_dic)
+            
+        return actions
+
+        
     def print_V(self, v):
         print("--")
         for m in v:
@@ -130,7 +204,7 @@ class rl_dyn_prog:
         m, n = s
         m_p, n_p = s_prime
 
-        currentDir = [m - m_p, n_p - n]
+        currentDir = [m_p - m, n_p - n]
         if (currentDir[0] == actionDir[0] and currentDir[1] == actionDir[1]):
             return 1
         else:
@@ -140,8 +214,6 @@ class rl_dyn_prog:
         # get current distribution from policy
         distribution = self.get_policyDistribution(s)
         V_s_tmp = 0
-        tmp_lst = []
-        tmp_lst2 = []
         for a in distribution:
             # First summation in bellman equation (value function)
             # value of pi(a|s)
@@ -155,10 +227,10 @@ class rl_dyn_prog:
 
             # Second sum with p(s',r |s, a) in the bellman equation
             v_s_p = 0
-            
+
             for s_ in s_prime:
                 p = self.p_s_a(s_, s, a)
-                
+
                 if (s_[0] not in range(0, self.size[0])) or \
                    (s_[1] not in range(0, self.size[1])):
                         s_ = s
@@ -190,22 +262,22 @@ if __name__ == '__main__':
     rl.set_gamma(1)
     
     print("1st")
-    rl.evaluat_policy(1)
+    rl.policy_iteration(1)
     rl.print_V(rl.V_s)
     rl.reset_v_s()
-    
-    print("2nd")
-    rl.evaluat_policy(0.1)
-    rl.print_V(rl.V_s)
-    rl.reset_v_s()
-    
-    print("3rd")
-    rl.evaluat_policy(0.0001)
-    rl.print_V(rl.V_s)
-    rl.reset_v_s()
-    
-
-    print("4th")    
-    rl.evaluat_policy(0.0001)
-    rl.print_V(rl.V_s)
 #    
+#    print("2nd")
+#    rl.evaluat_policy(0.1)
+#    rl.print_V(rl.V_s)
+#    rl.reset_v_s()
+#    
+#    print("3rd")
+#    rl.evaluat_policy(0.0001)
+#    rl.print_V(rl.V_s)
+#    rl.reset_v_s()
+#    
+#
+#    print("4th")    
+#    rl.evaluat_policy(0.0001)
+#    rl.print_V(rl.V_s)
+##    
